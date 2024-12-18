@@ -1,0 +1,166 @@
+#+TITLE: Doom Config
+#+AUTHOR: Neil Pandya
+#+OPTIONS: toc:2
+#+TOC: headlines
+
+
+
+* Pretty
+This is the section that makes my Emacs look as good as it does.
+** TODO Set doom-font and doom-variable-pitch-font
+#+begin_src emacs-lisp
+
+
+(setq doom-theme 'leuven)
+;; (setq doom-theme 'tao-yang) ;; Is ideal for my setup after configuring the font for org-mode
+
+(setq display-line-numbers-type t) ;; Displays line number, set to "relative" for relative
+
+
+#+end_src
+
+* Org-Mode
+** Org-Mode
+#+begin_src emacs-lisp
+
+(setq org-directory "~/org/") ;; Must be set before runtime
+(setq org-agenda-files '("~/org/"))
+
+#+end_src
+** Org-Roam
+#+begin_src emacs-lisp
+
+;; Set org-roam directory
+(after! org-roam
+  (setq org-roam-directory "~/roam/")  ; Set your preferred directory path
+  (setq org-roam-db-location "~/roam/org-roam.db"))  ; Set database location
+
+;; Optional but recommended configurations
+(after! org-roam
+  ;; Set default capture templates
+  (setq org-roam-capture-templates
+        '(("d" "default" plain
+           "%?"
+           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                             "#+title: ${title}\n")
+           :unnarrowed t)
+          ("r" "reference" plain
+           "%?"
+           :target (file+head "references/${slug}.org"
+                             "#+title: ${title}\n")
+           :unnarrowed t)))
+
+  ;; Set completion system
+  (setq org-roam-completion-everywhere t)
+
+  ;; Set auto-sync
+  (setq org-roam-db-autosync-mode t)
+
+  ;; Set node display template
+  (setq org-roam-node-display-template
+        (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
+
+#+end_src
+* Org-Download
+#+begin_src emacs-lisp
+(setq org-download-method 'directory
+      org-download-image-dir "~/Pictures/org-images"  ; Set to Pictures directory
+      org-download-heading-lvl nil
+      org-download-timestamp "%Y%m%d-%H%M%S_"
+      org-image-actual-width nil
+      org-download-screenshot-method "flameshot gui --raw > %s"  ; Use flameshot for screenshots
+      org-download-screenshot-file (expand-file-name "screenshot.png" temporary-file-directory))
+
+;; Add drag-and-drop support
+(add-hook 'dired-mode-hook 'org-download-enable)
+
+;; Keybindings (optional)
+(map! :map org-mode-map
+      :leader
+      (:prefix ("i" . "insert")
+       :desc "Screenshot" "s" #'org-download-screenshot
+       :desc "Clipboard image" "p" #'org-download-clipboard))
+
+;; Remember to make org-images with "mkdir -p ~/Pictures/org-images" and download flameshot as a dependency
+
+#+end_src
+
+
+* Clipboard
+#+begin_src emacs-lisp
+;; Enable system clipboard integration
+(setq select-enable-clipboard t)
+
+;; Configure evil-mode to use system clipboard
+(setq evil-want-fine-undo t
+      evil-want-keybinding nil
+      evil-want-integration t
+      evil-kill-on-visual-paste nil)
+
+;; Key bindings for clipboard operations
+(map! :n "y" #'evil-yank
+      :v "y" #'evil-yank
+      :n "p" #'evil-paste-after
+      :v "p" #'evil-paste-after
+
+      ;; Explicit system clipboard operations
+      :leader
+      "i p" #'clipboard-yank     ; Paste from system clipboard
+      "i y" #'clipboard-kill-ring-save  ; Copy to system clipboard
+
+      ;; Browse kill ring
+      "i k" #'counsel-yank-pop)  ; Browse kill ring history
+
+#+end_src
+* EMMS
+#+begin_src emacs-lisp
+(after! emms
+  (emms-all)
+  (emms-default-players)
+
+  ;; Set up directories
+  (setq emms-source-file-default-directory "~/Music"
+        emms-history-file "~/Music/.emms-history"
+        emms-directory "~/Music/.emms"  ; For additional EMMS data
+        emms-playlist-buffer-name "*Music*")
+
+  ;; Enable tag editing
+  (require 'emms-tag-editor)
+  (setq emms-tag-editor-rename-format "%a - %t")  ; Artist - Title format
+
+  ;; Tag editor configuration
+  (setq emms-tag-editor-tags
+        '((info-artist      . "Artist")
+          (info-title       . "Title")
+          (info-album       . "Album")
+          (info-tracknumber . "Track")
+          (info-year        . "Year")
+          (info-genre       . "Genre")
+          (info-date        . "Date")
+          (info-composer    . "Composer")))
+
+  ;; General settings
+  (emms-mode-line 1)
+  (emms-playing-time 1)
+  (emms-info-asynchronously t)
+  (setq emms-player-list '(emms-player-mpv)))
+
+;; Doom-specific keybindings
+(map! :leader
+      (:prefix ("e" . "EMMS")  ; Using 'e' prefix for EMMS
+       "b" #'emms-browser
+       "p" #'emms-pause
+       "s" #'emms-stop
+       "n" #'emms-next
+       "P" #'emms-previous
+       "l" #'emms-playlist-mode-go
+       "r" #'emms-shuffle
+       "t" #'emms-tag-editor-edit))
+
+;; Playlist mode specific bindings
+(map! :map emms-playlist-mode-map
+      :n "C-t" #'emms-tag-editor-edit
+      :n "T" #'emms-tag-editor-edit-marked)
+
+;; Requires mpv and beets as a dependency
+#+end_src
